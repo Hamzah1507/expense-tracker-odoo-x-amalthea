@@ -61,3 +61,24 @@ A modern **Django-based Expense Tracker** for individuals and teams to efficient
 ```bash
 git clone https://github.com/Hamzah1507/expense-tracker-odoo-x-amalthea.git
 cd expense-tracker-odoo-x-amalthea
+```
+2. Create & activate virtual environment
+python -m venv venv
+
+# Windows
+venv\Scripts\activate
+
+# macOS/Linux
+source venv/bin/activate
+
+3. Install dependencies
+pip install -r requirements.txt
+
+4. Apply migrations
+python manage.py migrate
+
+5. Create a superuser (admin)
+python manage.py createsuperuser
+
+6. Run the development server
+python manage.py runserver
