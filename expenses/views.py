@@ -310,3 +310,4 @@ class OCRProcessAPIView(APIView):
                 {'error': f'OCR processing failed: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        

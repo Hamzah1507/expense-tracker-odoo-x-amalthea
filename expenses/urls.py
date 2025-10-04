@@ -21,4 +21,6 @@ urlpatterns = [
     path('countries-currencies/', CountryCurrencyAPIView.as_view(), name='countries-currencies'),
     path('currency-conversion/', CurrencyConversionAPIView.as_view(), name='currency-conversion'),
     path('ocr-process/', OCRProcessAPIView.as_view(), name='ocr-process'),
+    path('app/', include('expenses.frontend_urls'))
 ]
+

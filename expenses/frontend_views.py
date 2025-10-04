@@ -333,21 +333,23 @@ def approval_rules_list(request):
 
 @login_required
 def profile(request):
-    """User profile view"""
-    if request.method == 'POST':
-        # Update profile
-        user = request.user
-        user.first_name = request.POST.get('first_name', user.first_name)
-        user.last_name = request.POST.get('last_name', user.last_name)
-        user.email = request.POST.get('email', user.email)
-        user.phone = request.POST.get('phone', user.phone)
-        user.save()
-        
-        messages.success(request, 'Profile updated successfully!')
-        return redirect('profile')
+    user = request.user
     
-    return render(request, 'expenses/profile.html')
-
+    # Counts
+    approved_expenses_count = user.expenses.filter(status='approved').count()
+    pending_expenses_count = user.expenses.filter(status='pending').count()
+    
+    # Lists (optional, for displaying in tables)
+    approved_expenses = user.expenses.filter(status='approved')
+    pending_expenses = user.expenses.filter(status='pending')
+    
+    context = {
+        'approved_expenses_count': approved_expenses_count,
+        'pending_expenses_count': pending_expenses_count,
+        'approved_expenses': approved_expenses,
+        'pending_expenses': pending_expenses,
+    }
+    return render(request, 'expenses/profile.html', context)
 
 def login_view(request):
     """Login view"""
@@ -431,3 +433,13 @@ def logout_view(request):
     logout(request)
     messages.success(request, 'You have been logged out successfully.')
     return redirect('login')
+
+
+@login_required
+def users_list(request):
+    # Only allow admins or managers
+    if not (request.user.is_admin() or request.user.is_manager()):
+        return render(request, 'expenses/permission_denied.html', status=403)
+
+    users = User.objects.all().order_by('id')  # Or filter by company if needed
+    return render(request, 'expenses/users_list.html', {'users': users})
