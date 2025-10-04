@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ total_expenses }}</h4>
+                            <p class="mb-0">Total Expenses</p>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-receipt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        {% if user.is_manager or user.is_admin %}
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card" style="background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%);">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ pending_approvals }}</h4>
+                            <p class="mb-0">Pending Approvals</p>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if user.is_employee %}
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card" style="background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%);">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ pending_expenses }}</h4>
+                            <p class="mb-0">Pending Expenses</p>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-hourglass-half fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ approved_expenses }}</h4>
+                            <p class="mb-0">Approved Expenses</p>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if user.is_admin %}
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%);">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ total_users }}</h4>
+                            <p class="mb-0">Total Users</p>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Recent Expenses</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_expenses %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Category</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for expense in recent_expenses %}
+                                <tr>
+                                    <td>{{ expense.expense_date|date:"M d, Y" }}</td>
+                                    <td>{{ expense.amount }} {{ expense.currency }}</td>
+                                    <td>{{ expense.category.name }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if expense.status == 'pending' %}bg-warning
+                                            {% elif expense.status == 'approved' %}bg-success
+                                            {% elif expense.status == 'rejected' %}bg-danger
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ expense.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'expense_detail' expense.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No expenses found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                {% if user.is_employee or user.is_admin %}
+                <a href="{% url 'submit_expense' %}" class="btn btn-primary btn-lg w-100 mb-3">
+                    <i class="fas fa-plus"></i> Submit New Expense
+                </a>
+                {% endif %}
+                
+                {% if user.is_manager or user.is_admin %}
+                <a href="{% url 'approvals' %}" class="btn btn-warning btn-lg w-100 mb-3">
+                    <i class="fas fa-check-circle"></i> Review Approvals
+                </a>
+                {% endif %}
+                
+                <a href="{% url 'expenses' %}" class="btn btn-outline-primary btn-lg w-100 mb-3">
+                    <i class="fas fa-list"></i> View All Expenses
+                </a>
+                
+                <a href="{% url 'notifications' %}" class="btn btn-outline-info btn-lg w-100">
+                    <i class="fas fa-bell"></i> Notifications
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

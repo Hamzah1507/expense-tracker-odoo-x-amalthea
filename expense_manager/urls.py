@@ -4,10 +4,16 @@ from django.http import JsonResponse
 
 # Home view
 def home(request):
-    return JsonResponse({"message": "Expense Manager API is running"})
+    from django.shortcuts import redirect
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    else:
+        return redirect('login')
 
 urlpatterns = [
     path("", home, name="home"),  # Root path
     path('admin/', admin.site.urls),
     path("api/users/", include("users.urls")),
+    path("api/", include("expenses.urls")),
+    path("", include("expenses.frontend_urls")),  # Frontend routes
 ]
