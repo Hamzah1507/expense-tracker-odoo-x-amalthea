@@ -16,15 +16,15 @@
                 <div class="card-body">
                     <form method="post" enctype="multipart/form-data" id="expenseForm">
                         {% csrf_token %}
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="amount" class="form-label">
                                         <i class="fas fa-dollar-sign me-1"></i> Amount *
                                     </label>
-                                    <input type="number" class="form-control" id="amount" name="amount" 
-                                           step="0.01" min="0.01" required>
+                                    <input type="number" class="form-control" id="amount" name="amount" step="0.01"
+                                        min="0.01" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -33,7 +33,8 @@
                                         <i class="fas fa-coins me-1"></i> Currency *
                                     </label>
                                     <select class="form-select" id="currency" name="currency" required>
-                                        <option value="{{ company_currency }}">{{ company_currency }} (Company Default)</option>
+                                        <option value="{{ company_currency }}">{{ company_currency }} (Company Default)
+                                        </option>
                                         <option value="USD">USD - US Dollar</option>
                                         <option value="EUR">EUR - Euro</option>
                                         <option value="GBP">GBP - British Pound</option>
@@ -45,7 +46,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -54,10 +55,12 @@
                                     </label>
                                     <select class="form-select" id="category" name="category" required>
                                         <option value="">Select Category</option>
-                                        {% for category in categories %}
-                                        <option value="{{ category.id }}">{{ category.name }}</option>
-                                        {% endfor %}
+                                        <option value="1">Travel</option>
+                                        <option value="2">Meals</option>
+                                        <option value="3">Supplies</option>
+                                        <option value="4">Software</option>
                                     </select>
+
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -65,44 +68,45 @@
                                     <label for="expense_date" class="form-label">
                                         <i class="fas fa-calendar me-1"></i> Expense Date *
                                     </label>
-                                    <input type="date" class="form-control" id="expense_date" name="expense_date" 
-                                           value="{{ today|date:'Y-m-d' }}" required>
+                                    <input type="date" class="form-control" id="expense_date" name="expense_date"
+                                        value="{{ today|date:'Y-m-d' }}" required>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="description" class="form-label">
                                 <i class="fas fa-align-left me-1"></i> Description *
                             </label>
-                            <textarea class="form-control" id="description" name="description" rows="3" 
-                                      placeholder="Describe your expense..." required></textarea>
+                            <textarea class="form-control" id="description" name="description" rows="3"
+                                placeholder="Describe your expense..." required></textarea>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="receipt_image" class="form-label">
                                 <i class="fas fa-camera me-1"></i> Receipt Image
                             </label>
-                            <input type="file" class="form-control" id="receipt_image" name="receipt_image" 
-                                   accept="image/*" onchange="previewImage(this)">
+                            <input type="file" class="form-control" id="receipt_image" name="receipt_image"
+                                accept="image/*" onchange="previewImage(this)">
                             <div class="form-text">Upload a clear photo of your receipt for better processing</div>
                         </div>
-                        
+
                         <!-- Image Preview -->
                         <div id="imagePreview" class="mb-3" style="display: none;">
                             <label class="form-label">Receipt Preview:</label>
                             <div class="text-center">
-                                <img id="previewImg" src="" alt="Receipt Preview" class="img-thumbnail" style="max-width: 300px; max-height: 300px;">
+                                <img id="previewImg" src="" alt="Receipt Preview" class="img-thumbnail"
+                                    style="max-width: 300px; max-height: 300px;">
                             </div>
                         </div>
-                        
+
                         <!-- Currency Conversion Info -->
                         <div id="currencyConversion" class="alert alert-info" style="display: none;">
                             <i class="fas fa-info-circle me-2"></i>
                             <strong>Currency Conversion:</strong>
                             <span id="conversionText"></span>
                         </div>
-                        
+
                         <div class="d-flex justify-content-between">
                             <a href="{% url 'expenses' %}" class="btn btn-outline-secondary">
                                 <i class="fas fa-arrow-left me-1"></i> Back to Expenses
@@ -115,7 +119,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Quick Tips Sidebar -->
         <div class="col-lg-4">
             <div class="card">
@@ -133,7 +137,7 @@
                             <li>• Include all text in the frame</li>
                         </ul>
                     </div>
-                    
+
                     <div class="mb-3">
                         <h6><i class="fas fa-dollar-sign text-success me-1"></i> Amount Guidelines</h6>
                         <ul class="list-unstyled small">
@@ -142,7 +146,7 @@
                             <li>• System will auto-convert if needed</li>
                         </ul>
                     </div>
-                    
+
                     <div class="mb-3">
                         <h6><i class="fas fa-clock text-warning me-1"></i> Approval Process</h6>
                         <ul class="list-unstyled small">
@@ -153,7 +157,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Recent Expenses -->
             <div class="card mt-3">
                 <div class="card-header">
@@ -170,7 +174,8 @@
                                 <small class="text-muted">{{ expense.expense_date|date:"M d" }}</small>
                             </div>
                             <div class="text-end">
-                                <span class="badge bg-{% if expense.status == 'approved' %}success{% elif expense.status == 'pending' %}warning{% else %}danger{% endif %}">
+                                <span
+                                    class="badge bg-{% if expense.status == 'approved' %}success{% elif expense.status == 'pending' %}warning{% else %}danger{% endif %}">
                                     {{ expense.status|title }}
                                 </span>
                                 <div class="small">{{ expense.amount }} {{ expense.currency }}</div>
@@ -192,44 +197,44 @@
 
 {% block extra_js %}
 <script>
-function previewImage(input) {
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('previewImg').src = e.target.result;
-            document.getElementById('imagePreview').style.display = 'block';
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('imagePreview').style.display = 'block';
+            }
+            reader.readAsDataURL(input.files[0]);
         }
-        reader.readAsDataURL(input.files[0]);
     }
-}
 
-// Currency conversion
-document.getElementById('currency').addEventListener('change', function() {
-    const amount = document.getElementById('amount').value;
-    const currency = this.value;
-    const companyCurrency = '{{ company_currency }}';
-    
-    if (amount && currency && currency !== companyCurrency) {
-        // Show conversion info
-        document.getElementById('currencyConversion').style.display = 'block';
-        document.getElementById('conversionText').textContent = 
-            `Your expense of ${amount} ${currency} will be converted to ${companyCurrency} for approval.`;
-    } else {
-        document.getElementById('currencyConversion').style.display = 'none';
-    }
-});
+    // Currency conversion
+    document.getElementById('currency').addEventListener('change', function () {
+        const amount = document.getElementById('amount').value;
+        const currency = this.value;
+        const companyCurrency = '{{ company_currency }}';
 
-// Form validation
-document.getElementById('expenseForm').addEventListener('submit', function(e) {
-    const amount = document.getElementById('amount').value;
-    if (amount <= 0) {
-        e.preventDefault();
-        alert('Please enter a valid amount greater than 0.');
-        return false;
-    }
-});
+        if (amount && currency && currency !== companyCurrency) {
+            // Show conversion info
+            document.getElementById('currencyConversion').style.display = 'block';
+            document.getElementById('conversionText').textContent =
+                `Your expense of ${amount} ${currency} will be converted to ${companyCurrency} for approval.`;
+        } else {
+            document.getElementById('currencyConversion').style.display = 'none';
+        }
+    });
 
-// Auto-focus on amount field
-document.getElementById('amount').focus();
+    // Form validation
+    document.getElementById('expenseForm').addEventListener('submit', function (e) {
+        const amount = document.getElementById('amount').value;
+        if (amount <= 0) {
+            e.preventDefault();
+            alert('Please enter a valid amount greater than 0.');
+            return false;
+        }
+    });
+
+    // Auto-focus on amount field
+    document.getElementById('amount').focus();
 </script>
 {% endblock %}
