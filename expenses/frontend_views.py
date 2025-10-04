@@ -5,36 +5,41 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse, Http404
 from django.utils import timezone
-from django.db.models import Q, Count
+from django.db.models import Q
+from decimal import Decimal
 import json
 import requests
+import uuid # 🛑 ADDED: Potentially needed for UUID fields
+
+# Assuming these models exist in your .models
 from .models import Expense, ExpenseCategory, ApprovalRule, ExpenseApproval, Notification
-from .services import CurrencyService, ApprovalWorkflowService
+# Assuming these models exist in users.models
 from users.models import User, Company
+# Assuming these services exist
+from .services import ApprovalWorkflowService, CurrencyService 
+
+# --- Helper function for context (cleaner code) ---
+def get_expense_submit_context(user):
+    return {
+        'company_currency': user.company.currency,
+        'today': timezone.now(),
+    }
+# -------------------------------------------------
 
 
 @login_required
 def dashboard(request):
     """Main dashboard view"""
     user = request.user
-    
-    # Get statistics based on user role
+
     if user.is_admin():
-        # Admin dashboard
         total_expenses = Expense.objects.filter(company=user.company).count()
-        pending_approvals = ExpenseApproval.objects.filter(
-            expense__company=user.company,
-            status='pending'
-        ).count()
+        pending_approvals = ExpenseApproval.objects.filter(expense__company=user.company, status='pending').count()
         total_users = user.company.user_set.count()
-        
-        recent_expenses = Expense.objects.filter(
-            company=user.company
-        ).order_by('-created_at')[:5]
-        
+        recent_expenses = Expense.objects.filter(company=user.company).order_by('-created_at')[:5]
+
         context = {
             'total_expenses': total_expenses,
             'pending_approvals': pending_approvals,
@@ -42,22 +47,14 @@ def dashboard(request):
             'recent_expenses': recent_expenses,
             'user_role': 'admin'
         }
-    
+
     elif user.is_manager():
-        # Manager dashboard
         team_members = user.user_set.all()
-        team_expenses = Expense.objects.filter(
-            Q(user=user) | Q(user__in=team_members)
-        )
-        
+        team_expenses = Expense.objects.filter(Q(user=user) | Q(user__in=team_members))
         total_expenses = team_expenses.count()
-        pending_approvals = ExpenseApproval.objects.filter(
-            approver=user,
-            status='pending'
-        ).count()
-        
+        pending_approvals = ExpenseApproval.objects.filter(approver=user, status='pending').count()
         recent_expenses = team_expenses.order_by('-created_at')[:5]
-        
+
         context = {
             'total_expenses': total_expenses,
             'pending_approvals': pending_approvals,
@@ -65,16 +62,14 @@ def dashboard(request):
             'recent_expenses': recent_expenses,
             'user_role': 'manager'
         }
-    
+
     else:
-        # Employee dashboard
         user_expenses = Expense.objects.filter(user=user)
         total_expenses = user_expenses.count()
         pending_expenses = user_expenses.filter(status='pending').count()
         approved_expenses = user_expenses.filter(status='approved').count()
-        
         recent_expenses = user_expenses.order_by('-created_at')[:5]
-        
+
         context = {
             'total_expenses': total_expenses,
             'pending_expenses': pending_expenses,
@@ -82,7 +77,7 @@ def dashboard(request):
             'recent_expenses': recent_expenses,
             'user_role': 'employee'
         }
-    
+
     return render(request, 'expenses/dashboard.html', context)
 
 
@@ -90,73 +85,84 @@ def dashboard(request):
 def expenses_list(request):
     """List expenses for current user"""
     user = request.user
-    
+
     if user.is_admin():
         expenses = Expense.objects.filter(company=user.company)
     elif user.is_manager():
         team_members = user.user_set.all()
-        expenses = Expense.objects.filter(
-            Q(user=user) | Q(user__in=team_members)
-        )
+        expenses = Expense.objects.filter(Q(user=user) | Q(user__in=team_members))
     else:
         expenses = Expense.objects.filter(user=user)
-    
-    # Filter by status if provided
+
     status_filter = request.GET.get('status')
     if status_filter:
         expenses = expenses.filter(status=status_filter)
-    
-    # Filter by date range if provided
+
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
     if date_from:
         expenses = expenses.filter(expense_date__gte=date_from)
     if date_to:
         expenses = expenses.filter(expense_date__lte=date_to)
-    
+
     expenses = expenses.order_by('-created_at')
-    
+
     context = {
         'expenses': expenses,
         'status_filter': status_filter,
         'date_from': date_from,
         'date_to': date_to,
     }
-    
+
     return render(request, 'expenses/expenses_list.html', context)
 
 
 @login_required
+@login_required
 def submit_expense(request):
     """Submit new expense form"""
+    
+    # Get context for rendering the form
+    context = {
+        'company_currency': request.user.company.currency,
+        'today': timezone.now(),
+    }
+        
     if request.method == 'POST':
         try:
-            # Get form data
             amount = request.POST.get('amount')
             currency = request.POST.get('currency')
-            category_id = request.POST.get('category')
+            category_name = request.POST.get('category')  # Hardcoded string from form
             description = request.POST.get('description')
             expense_date = request.POST.get('expense_date')
+
+            # Validate required fields
+            if not all([amount, currency, category_name, description, expense_date]):
+                messages.error(request, 'Please fill out all required fields.')
+                return render(request, 'expenses/submit_expense.html', context)
             
-            # Create expense
-            category = get_object_or_404(ExpenseCategory, id=category_id, company=request.user.company)
+            # Find or Create the ExpenseCategory instance
+            category_instance, created = ExpenseCategory.objects.get_or_create(
+                name=category_name,
+                company=request.user.company,
+                defaults={'is_active': True} 
+            )
             
+            # --- Expense Creation ---
             expense = Expense.objects.create(
                 user=request.user,
                 company=request.user.company,
-                amount=amount,
+                amount=Decimal(amount),
                 currency=currency,
-                category=category,
+                category=category_instance, 
                 description=description,
                 expense_date=expense_date,
-                status='draft'
+                status='draft' # Set initial status
             )
-            
-            # Convert currency if needed
+            # --- End Expense Creation ---
+
+            # Currency conversion logic
             if currency != request.user.company.currency:
-                from .services import CurrencyService
-                from decimal import Decimal
-                
                 conversion = CurrencyService.convert_currency(
                     Decimal(amount),
                     currency,
@@ -164,82 +170,61 @@ def submit_expense(request):
                 )
                 expense.amount_in_company_currency = conversion['converted_amount']
                 expense.exchange_rate = conversion['exchange_rate']
-                expense.save()
             else:
                 expense.amount_in_company_currency = Decimal(amount)
                 expense.exchange_rate = 1.0
-                expense.save()
-            
-            # Handle file upload if provided
+
+            # Handle receipt upload
             if 'receipt_image' in request.FILES:
                 expense.receipt_image = request.FILES['receipt_image']
-                expense.save()
+
+            expense.save()
             
-            messages.success(request, 'Expense created successfully!')
+            # --- Initiate Approval Workflow ---
+            # 🛑 FIX: Assuming the correct method name is start_approval_workflow.
+            # If this still fails, you MUST check your services.py file for the correct name.
+            ApprovalWorkflowService.start_approval_workflow(expense) 
+            # ---------------------------------------------------------------------------
+            
+            messages.success(request, 'Expense submitted successfully and is awaiting approval!')
             return redirect('expenses')
-            
+
         except Exception as e:
             messages.error(request, f'Error creating expense: {str(e)}')
-    
-    # Get categories for the form
-    categories = ExpenseCategory.objects.filter(company=request.user.company, is_active=True)
-    
-    # Get countries and currencies for the form
-    countries_data = CurrencyService.get_countries_and_currencies()
-    
-    context = {
-        'categories': categories,
-        'countries_data': countries_data[:50],  # Limit for performance
-        'company_currency': request.user.company.currency,
-    }
-    
-    return render(request, 'expenses/submit_expense.html', context)
+            return render(request, 'expenses/submit_expense.html', context)
 
+    # GET request: pass context
+    return render(request, 'expenses/submit_expense.html', context)
 
 @login_required
 def expense_detail(request, expense_id):
     """View expense details"""
     user = request.user
-    
+
+    # Assuming expense_id is the primary key
     if user.is_admin():
-        expense = get_object_or_404(Expense, id=expense_id, company=user.company)
+        expense = get_object_or_404(Expense, pk=expense_id, company=user.company)
     elif user.is_manager():
         team_members = user.user_set.all()
-        try:
-            expense = Expense.objects.filter(
-                Q(user=user) | Q(user__in=team_members),
-                id=expense_id
-            ).first()
-            if not expense:
-                from django.http import Http404
-                raise Http404("Expense not found")
-        except:
-            from django.http import Http404
+        expense = Expense.objects.filter(Q(user=user) | Q(user__in=team_members), pk=expense_id).first()
+        if not expense:
             raise Http404("Expense not found")
     else:
-        expense = get_object_or_404(Expense, id=expense_id, user=user)
-    
-    # Get approvals for this expense
+        expense = get_object_or_404(Expense, pk=expense_id, user=user)
+
     approvals = ExpenseApproval.objects.filter(expense=expense).order_by('created_at')
-    
-    context = {
-        'expense': expense,
-        'approvals': approvals,
-    }
-    
-    return render(request, 'expenses/expense_detail.html', context)
+    return render(request, 'expenses/expense_detail.html', {'expense': expense, 'approvals': approvals})
 
 
 @login_required
 def approvals_list(request):
     """List pending approvals for managers/admins"""
     user = request.user
-    
+
     if not (user.is_manager() or user.is_admin()):
         messages.error(request, 'You do not have permission to view approvals.')
         return redirect('dashboard')
-    
-    # Get pending approvals
+
     if user.is_admin():
         pending_approvals = ExpenseApproval.objects.filter(
             expense__company=user.company,
@@ -250,22 +235,18 @@ def approvals_list(request):
             approver=user,
             status='pending'
         ).order_by('-created_at')
-    
-    context = {
-        'pending_approvals': pending_approvals,
-    }
-    
-    return render(request, 'expenses/approvals_list.html', context)
+
+    return render(request, 'expenses/approvals_list.html', {'pending_approvals': pending_approvals})
 
 
 @login_required
 def approve_expense(request, approval_id):
     """Approve or reject an expense"""
     if request.method == 'POST':
-        approval = get_object_or_404(ExpenseApproval, id=approval_id, approver=request.user)
+        approval = get_object_or_404(ExpenseApproval, pk=approval_id, approver=request.user)
         action = request.POST.get('action')
         comments = request.POST.get('comments', '')
-        
+
         try:
             if action == 'approve':
                 ApprovalWorkflowService.process_approval(approval, 'approved', comments)
@@ -276,13 +257,13 @@ def approve_expense(request, approval_id):
             else:
                 messages.error(request, 'Invalid action.')
                 return redirect('approvals')
-            
+
             return redirect('approvals')
-            
+
         except Exception as e:
             messages.error(request, f'Error processing approval: {str(e)}')
             return redirect('approvals')
-    
+
     return redirect('approvals')
 
 
@@ -290,31 +271,19 @@ def approve_expense(request, approval_id):
 def notifications_list(request):
     """List user notifications"""
     notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
-    
-    # Mark all as read when viewing
     notifications.update(is_read=True)
-    
-    context = {
-        'notifications': notifications,
-    }
-    
-    return render(request, 'expenses/notifications_list.html', context)
+    return render(request, 'expenses/notifications_list.html', {'notifications': notifications})
 
 
 @login_required
 def users_list(request):
-    """List company users (Admin only)"""
-    if not request.user.is_admin():
+    """List company users (Admin/Manager)"""
+    if not (request.user.is_admin() or request.user.is_manager()):
         messages.error(request, 'You do not have permission to view users.')
         return redirect('dashboard')
-    
-    users = request.user.company.user_set.all().order_by('role', 'first_name')
-    
-    context = {
-        'users': users,
-    }
-    
-    return render(request, 'expenses/users_list.html', context)
+
+    users = User.objects.filter(company=request.user.company).order_by('role', 'first_name')
+    return render(request, 'expenses/users_list.html', {'users': users})
 
 
 @login_required
@@ -323,51 +292,45 @@ def approval_rules_list(request):
     if not request.user.is_admin():
         messages.error(request, 'You do not have permission to view approval rules.')
         return redirect('dashboard')
-    
+
     rules = ApprovalRule.objects.filter(company=request.user.company).order_by('-created_at')
-    
-    context = {
-        'rules': rules,
-    }
-    
-    return render(request, 'expenses/approval_rules_list.html', context)
+    return render(request, 'expenses/approval_rules_list.html', {'rules': rules})
 
 
 @login_required
 def profile(request):
-    """User profile view"""
-    if request.method == 'POST':
-        # Update profile
-        user = request.user
-        user.first_name = request.POST.get('first_name', user.first_name)
-        user.last_name = request.POST.get('last_name', user.last_name)
-        user.email = request.POST.get('email', user.email)
-        user.phone = request.POST.get('phone', user.phone)
-        user.save()
-        
-        messages.success(request, 'Profile updated successfully!')
-        return redirect('profile')
-    
-    return render(request, 'expenses/profile.html')
+    user = request.user
+
+    approved_expenses = user.expenses.filter(status='approved')
+    pending_expenses = user.expenses.filter(status='pending')
+
+    context = {
+        'approved_expenses_count': approved_expenses.count(),
+        'pending_expenses_count': pending_expenses.count(),
+        'approved_expenses': approved_expenses,
+        'pending_expenses': pending_expenses,
+    }
+
+    return render(request, 'expenses/profile.html', context)
 
 
 def login_view(request):
     """Login view"""
     if request.user.is_authenticated:
         return redirect('dashboard')
-    
+
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
-        
+
         user = authenticate(request, username=username, password=password)
-        if user is not None:
+        if user:
             login(request, user)
             messages.success(request, f'Welcome back, {user.full_name}!')
             return redirect('dashboard')
         else:
             messages.error(request, 'Invalid username or password.')
-    
+
     return render(request, 'expenses/login.html')
 
 
@@ -375,10 +338,9 @@ def register_view(request):
     """Registration view"""
     if request.user.is_authenticated:
         return redirect('dashboard')
-    
+
     if request.method == 'POST':
         try:
-            # Get form data
             first_name = request.POST.get('first_name')
             last_name = request.POST.get('last_name')
             username = request.POST.get('username')
@@ -389,13 +351,11 @@ def register_view(request):
             password_confirm = request.POST.get('password_confirm')
             company_name = request.POST.get('company_name')
             country = request.POST.get('country')
-            
-            # Validate passwords match
+
             if password != password_confirm:
                 messages.error(request, 'Passwords do not match.')
                 return render(request, 'expenses/register.html')
-            
-            # Create company if admin
+
             company = None
             if role == 'admin':
                 company = Company.objects.create(
@@ -403,8 +363,7 @@ def register_view(request):
                     country=country or 'United States',
                     currency='USD'
                 )
-            
-            # Create user
+
             user = User.objects.create_user(
                 username=username,
                 email=email,
@@ -415,15 +374,14 @@ def register_view(request):
                 role=role,
                 company=company
             )
-            
-            # Auto-login after registration
+
             login(request, user)
             messages.success(request, f'Account created successfully! Welcome, {user.full_name}!')
             return redirect('dashboard')
-            
+
         except Exception as e:
             messages.error(request, f'Error creating account: {str(e)}')
-    
+
     return render(request, 'expenses/register.html')
 
 

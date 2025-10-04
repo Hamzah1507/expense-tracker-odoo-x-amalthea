@@ -1,19 +1,33 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.http import JsonResponse
+from django.shortcuts import redirect
+from django.conf.urls.static import static
+from django.conf import settings
 
-# Home view
+# ✅ Home view: decides where to go based on authentication
 def home(request):
-    from django.shortcuts import redirect
     if request.user.is_authenticated:
+        # Redirect authenticated users to dashboard
         return redirect('dashboard')
     else:
+        # Redirect unauthenticated users to login page
         return redirect('login')
 
+
 urlpatterns = [
-    path("", home, name="home"),  # Root path
+    # Django Admin Panel
     path('admin/', admin.site.urls),
-    path("api/users/", include("users.urls")),
-    path("api/", include("expenses.urls")),
-    path("", include("expenses.frontend_urls")),  # Frontend routes
+
+    # API endpoints
+    path('api/users/', include('users.urls')),
+    path('api/', include('expenses.urls')),
+
+    # Frontend (Template) routes
+    path('app/', include('expenses.frontend_urls')),
+
+    # Root route ("/") → handled by home() defined above
+    path('', home, name='home'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

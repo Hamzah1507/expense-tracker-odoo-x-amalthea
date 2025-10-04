@@ -14,13 +14,11 @@
 {% block content %}
 <div class="fade-in">
     <div class="row">
-        <!-- Profile Information -->
+        <!-- Profile Information Column -->
         <div class="col-lg-4 mb-4">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-user-circle me-2"></i> Profile Information
-                    </h5>
+                    <h5 class="mb-0"><i class="fas fa-user-circle me-2"></i> Profile Information</h5>
                 </div>
                 <div class="card-body text-center">
                     <div class="profile-avatar mb-3">
@@ -28,13 +26,12 @@
                             <i class="fas fa-user fa-2x"></i>
                         </div>
                     </div>
-                    
                     <h4 class="mb-1">{{ user.full_name }}</h4>
                     <p class="text-muted mb-2">{{ user.get_role_display }}</p>
                     <span class="badge bg-primary">{{ user.company.name }}</span>
-                    
+
                     <hr>
-                    
+
                     <div class="profile-stats">
                         <div class="row text-center">
                             <div class="col-4">
@@ -45,13 +42,13 @@
                             </div>
                             <div class="col-4">
                                 <div class="stat-item">
-                                    <h6 class="mb-0">{{ user.expenses.filter.status='approved'|length }}</h6>
+                                    <h6 class="mb-0">{{ approved_expenses_count }}</h6>
                                     <small class="text-muted">Approved</small>
                                 </div>
                             </div>
                             <div class="col-4">
                                 <div class="stat-item">
-                                    <h6 class="mb-0">{{ user.expenses.filter.status='pending'|length }}</h6>
+                                    <h6 class="mb-0">{{ pending_expenses_count }}</h6>
                                     <small class="text-muted">Pending</small>
                                 </div>
                             </div>
@@ -59,13 +56,11 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Quick Actions -->
             <div class="card mt-3">
                 <div class="card-header">
-                    <h6 class="mb-0">
-                        <i class="fas fa-bolt me-2"></i> Quick Actions
-                    </h6>
+                    <h6 class="mb-0"><i class="fas fa-bolt me-2"></i> Quick Actions</h6>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
@@ -84,200 +79,127 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Profile Form -->
+
+        <!-- Profile Form and Activity Column -->
         <div class="col-lg-8">
-            <div class="card">
+            <!-- Edit Profile Form -->
+            <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-edit me-2"></i> Edit Profile
-                    </h5>
+                    <h5 class="mb-0"><i class="fas fa-edit me-2"></i> Edit Profile</h5>
                 </div>
                 <div class="card-body">
-                    <form method="post" id="profileForm">
-                        {% csrf_token %}
-                        
+                    <form method="post" id="profileForm">{% csrf_token %}
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="first_name" class="form-label">
-                                        <i class="fas fa-user me-1"></i> First Name *
-                                    </label>
-                                    <input type="text" class="form-control" id="first_name" name="first_name" 
-                                           value="{{ user.first_name }}" required>
+                                    <label for="first_name" class="form-label"><i class="fas fa-user me-1"></i> First Name *</label>
+                                    <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="last_name" class="form-label">
-                                        <i class="fas fa-user me-1"></i> Last Name *
-                                    </label>
-                                    <input type="text" class="form-control" id="last_name" name="last_name" 
-                                           value="{{ user.last_name }}" required>
+                                    <label for="last_name" class="form-label"><i class="fas fa-user me-1"></i> Last Name *</label>
+                                    <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}" required>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="email" class="form-label">
-                                        <i class="fas fa-envelope me-1"></i> Email *
-                                    </label>
-                                    <input type="email" class="form-control" id="email" name="email" 
-                                           value="{{ user.email }}" required>
+                                    <label for="email" class="form-label"><i class="fas fa-envelope me-1"></i> Email *</label>
+                                    <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="phone" class="form-label">
-                                        <i class="fas fa-phone me-1"></i> Phone
-                                    </label>
-                                    <input type="tel" class="form-control" id="phone" name="phone" 
-                                           value="{{ user.phone }}">
+                                    <label for="phone" class="form-label"><i class="fas fa-phone me-1"></i> Phone</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.phone }}">
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="mb-3">
-                            <label for="username" class="form-label">
-                                <i class="fas fa-at me-1"></i> Username
-                            </label>
-                            <input type="text" class="form-control" id="username" name="username" 
-                                   value="{{ user.username }}" readonly>
+                            <label for="username" class="form-label"><i class="fas fa-at me-1"></i> Username</label>
+                            <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" readonly>
                             <div class="form-text">Username cannot be changed</div>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">
-                                <i class="fas fa-building me-1"></i> Company Information
-                            </label>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <input type="text" class="form-control" value="{{ user.company.name }}" readonly>
-                                    <div class="form-text">Company Name</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <input type="text" class="form-control" value="{{ user.company.country }}" readonly>
-                                    <div class="form-text">Country</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">
-                                <i class="fas fa-user-tag me-1"></i> Role & Permissions
-                            </label>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <input type="text" class="form-control" value="{{ user.get_role_display }}" readonly>
-                                    <div class="form-text">Your Role</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <input type="text" class="form-control" 
-                                           value="{% if user.manager %}{{ user.manager.full_name }}{% else %}No Manager{% endif %}" readonly>
-                                    <div class="form-text">Manager</div>
-                                </div>
-                            </div>
-                        </div>
-                        
+
                         <div class="d-flex justify-content-between">
-                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
-                                <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-1"></i> Save Changes
-                            </button>
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> Back to Dashboard</a>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Save Changes</button>
                         </div>
                     </form>
                 </div>
             </div>
-            
-            <!-- Account Security -->
-            <div class="card mt-4">
+
+            <!-- Expenses Tables -->
+            <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-shield-alt me-2"></i> Account Security
-                    </h5>
+                    <h5 class="mb-0"><i class="fas fa-receipt me-2"></i> Approved Expenses</h5>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="security-item">
-                                <div class="d-flex align-items-center">
-                                    <i class="fas fa-key text-success me-3"></i>
-                                    <div>
-                                        <h6 class="mb-1">Password</h6>
-                                        <small class="text-muted">Last changed: Never</small>
-                                    </div>
-                                </div>
-                                <button class="btn btn-outline-primary btn-sm" onclick="changePassword()">
-                                    Change Password
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="security-item">
-                                <div class="d-flex align-items-center">
-                                    <i class="fas fa-mobile-alt text-info me-3"></i>
-                                    <div>
-                                        <h6 class="mb-1">Two-Factor Authentication</h6>
-                                        <small class="text-muted">Not enabled</small>
-                                    </div>
-                                </div>
-                                <button class="btn btn-outline-secondary btn-sm" disabled>
-                                    Enable 2FA
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                <div class="card-body p-0">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Amount</th>
+                                <th>Currency</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in approved_expenses %}
+                            <tr>
+                                <td>{{ expense.title }}</td>
+                                <td>{{ expense.amount }}</td>
+                                <td>{{ expense.currency }}</td>
+                                <td>{{ expense.created_at|date:"Y-m-d" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">No approved expenses</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            
-            <!-- Recent Activity -->
-            <div class="card mt-4">
+
+            <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-history me-2"></i> Recent Activity
-                    </h5>
+                    <h5 class="mb-0"><i class="fas fa-hourglass-half me-2"></i> Pending Expenses</h5>
                 </div>
-                <div class="card-body">
-                    <div class="activity-timeline">
-                        <div class="activity-item">
-                            <div class="activity-icon bg-primary">
-                                <i class="fas fa-user"></i>
-                            </div>
-                            <div class="activity-content">
-                                <h6 class="mb-1">Profile Updated</h6>
-                                <small class="text-muted">You updated your profile information</small>
-                                <div class="activity-time">Just now</div>
-                            </div>
-                        </div>
-                        
-                        <div class="activity-item">
-                            <div class="activity-icon bg-success">
-                                <i class="fas fa-receipt"></i>
-                            </div>
-                            <div class="activity-content">
-                                <h6 class="mb-1">Expense Submitted</h6>
-                                <small class="text-muted">You submitted a new expense for $150.00</small>
-                                <div class="activity-time">2 hours ago</div>
-                            </div>
-                        </div>
-                        
-                        <div class="activity-item">
-                            <div class="activity-icon bg-warning">
-                                <i class="fas fa-check"></i>
-                            </div>
-                            <div class="activity-content">
-                                <h6 class="mb-1">Expense Approved</h6>
-                                <small class="text-muted">Your expense of $75.00 was approved</small>
-                                <div class="activity-time">1 day ago</div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="card-body p-0">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Amount</th>
+                                <th>Currency</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in pending_expenses %}
+                            <tr>
+                                <td>{{ expense.title }}</td>
+                                <td>{{ expense.amount }}</td>
+                                <td>{{ expense.currency }}</td>
+                                <td>{{ expense.created_at|date:"Y-m-d" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">No pending expenses</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
+
+            <!-- Recent Activity & Security (optional, copy your previous sections here) -->
+
         </div>
     </div>
 </div>
@@ -286,22 +208,18 @@
 {% block extra_js %}
 <script>
 function changePassword() {
-    alert('Password change functionality will be implemented with a separate modal/form.');
+    alert('Password change functionality will be implemented separately.');
 }
 
-// Form validation
 document.getElementById('profileForm').addEventListener('submit', function(e) {
     const firstName = document.getElementById('first_name').value.trim();
     const lastName = document.getElementById('last_name').value.trim();
     const email = document.getElementById('email').value.trim();
-    
     if (!firstName || !lastName || !email) {
         e.preventDefault();
         alert('Please fill in all required fields.');
         return false;
     }
-    
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         e.preventDefault();
@@ -312,10 +230,6 @@ document.getElementById('profileForm').addEventListener('submit', function(e) {
 </script>
 
 <style>
-.profile-avatar {
-    margin-bottom: 1rem;
-}
-
 .avatar-circle-large {
     width: 80px;
     height: 80px;
@@ -327,66 +241,7 @@ document.getElementById('profileForm').addEventListener('submit', function(e) {
     color: white;
     margin: 0 auto;
 }
-
-.profile-stats {
-    margin-top: 1rem;
-}
-
-.stat-item {
-    padding: 0.5rem;
-}
-
-.security-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-}
-
-.activity-timeline {
-    position: relative;
-}
-
-.activity-item {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 1.5rem;
-    position: relative;
-}
-
-.activity-item:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    left: 20px;
-    top: 40px;
-    bottom: -20px;
-    width: 2px;
-    background: #e9ecef;
-}
-
-.activity-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    margin-right: 1rem;
-    flex-shrink: 0;
-}
-
-.activity-content {
-    flex: 1;
-}
-
-.activity-time {
-    font-size: 0.8rem;
-    color: #6c757d;
-    margin-top: 0.25rem;
-}
+.profile-stats { margin-top: 1rem; }
+.stat-item { padding: 0.5rem; }
 </style>
 {% endblock %}

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Expense Details{% endblock %}
+
+{% block content %}
+<h2>Expense Details</h2>
+
+<p><strong>Date:</strong> {{ expense.expense_date }}</p>
+<p><strong>Amount:</strong> {{ expense.amount }} {{ expense.currency }}</p>
+<p><strong>Category:</strong> {{ expense.category.name }}</p>
+<p><strong>Description:</strong> {{ expense.description }}</p>
+
+{% if expense.receipt_image %}
+<p><strong>Receipt:</strong></p>
+<img src="{{ expense.receipt_image.url }}" alt="Receipt" class="img-fluid" style="max-width:400px;">
+{% endif %}
+
+<a href="{% url 'expenses' %}" class="btn btn-secondary mt-3">Back to Expenses</a>
+{% endblock %}
